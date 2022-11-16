@@ -93,6 +93,6 @@ test = generate_tables.generate_test_hail_table(primary_row_key=primary_row_key,
                                                 primary_col_key=primary_col_key,
                                                 entry_fields=entry_fields)
 
-test.show()
+test.show(n_cols=2)
 vl = dict(test.entry)
 print(vl)
