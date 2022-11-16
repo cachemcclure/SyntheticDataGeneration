@@ -1,0 +1,6 @@
+pyspark
+pandas
+hail
+dbldatagen
+numpy
+pyarrow >= 1.0.0

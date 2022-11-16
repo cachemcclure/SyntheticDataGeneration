@@ -1,0 +1,5 @@
+hail*.log
+venv/*
+.idea/*
+*.iml
+spark/*
