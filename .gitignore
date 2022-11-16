@@ -3,3 +3,6 @@ venv/*
 .idea/*
 *.iml
 spark/*
+build_hail_test.py
+build_join_table_test.py
+build_table_test.py
