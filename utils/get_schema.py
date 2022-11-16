@@ -57,6 +57,46 @@ def implied_schema(implicit_dataframe):
             else:
                 raise Exception(f'PARSE ERROR: unable to impute data type for column {col}')
             out.append(temp)
+    elif isinstance(type(implicit_dataframe),hl.matrixtable.MatrixTable):
+        entries = dict(implicit_dataframe.entry)
+        col_key = dict(implicit_dataframe.col)
+        row_key = dict(implicit_dataframe.row)
+        for entry in entries:
+            temp = {'field_name':entry}
+            vtype = type(entries[entry])
+            if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
+                temp['data_type'] = FloatType()
+            elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
+                temp['data_type'] = IntegerType()
+            elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
+                temp['data_type'] = StringType()
+            elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
+                temp['data_type'] = BooleanType()
+            out.append(temp)
+        for entry in col_key:
+            temp = {'field_name':entry}
+            vtype = type(entries[entry])
+            if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
+                temp['data_type'] = FloatType()
+            elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
+                temp['data_type'] = IntegerType()
+            elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
+                temp['data_type'] = StringType()
+            elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
+                temp['data_type'] = BooleanType()
+            out.append(temp)
+        for entry in row_key:
+            temp = {'field_name':entry}
+            vtype = type(entries[entry])
+            if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
+                temp['data_type'] = FloatType()
+            elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
+                temp['data_type'] = IntegerType()
+            elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
+                temp['data_type'] = StringType()
+            elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
+                temp['data_type'] = BooleanType()
+            out.append(temp)
     else:
         raise Exception('INPUT EXCEPTION: Supplied dataframe of incorrect type')
     return out
