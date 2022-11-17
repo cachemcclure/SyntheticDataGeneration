@@ -152,6 +152,6 @@ def return_schema(schema_object, explicit=False):
             temp = implied_schema(schema_object)
         elif inspect.isclass(type(schema_object)):
             temp = implied_class(schema_object)
-        else:  ## TODO switch to elif to check for dataframe object instead of assuming
+        else:
             raise Exception('INPUT ERROR: Incorrect format for schema_object')
     return temp
