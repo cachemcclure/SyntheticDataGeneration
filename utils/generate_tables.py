@@ -5,11 +5,11 @@ from pyspark.sql import SparkSession
 import hail as hl
 
 
-def generate_identity_table(spark_session=None,
-                            identity_name='id',
+def generate_identity_table(spark_session,
+                            identity_name:str='id',
                             identity_type=StringType(),
-                            identity_values=[],
-                            no_of_values=0):
+                            identity_values:list=None,
+                            no_of_values:int=0):
     """
     DEPRECATED
     :param spark_session: PySpark session (default None)
@@ -19,6 +19,8 @@ def generate_identity_table(spark_session=None,
     :param no_of_values: Number of values to be generated
     :return: Returns a PySpark dataframe
     """
+    if identity_values is None:
+        identity_values = []
     if spark_session is None:
         spark_session = SparkSession.builder.master("local[1]").appName("Test Spark Session").getOrCreate()
     if (len(identity_values) == no_of_values) and (no_of_values == 0):
@@ -134,16 +136,11 @@ def add_column_to_dg(df_spec,field):
 
 
 def generate_test_data_table(table_name:str,
-                             spark_session=None,
-                             cols=[{'field_name':'id',
-                                    'data_type':StringType()}],
+                             spark_session,
+                             cols:list=None,
                              no_of_rows:int=0,
-                             primary_key:dict={
-                                 'field_name':'id',
-                                 'data_type':StringType(),
-                                 'value_list':[]
-                             },
-                             foreign_keys:list=[]):
+                             primary_key:dict=None,
+                             foreign_keys:list=None):
     """
     :param table_name: String, name of table
     :param spark_session: PySpark session (default None)
@@ -159,13 +156,24 @@ def generate_test_data_table(table_name:str,
     :param foreign_keys: Foreign (join) keys to join this table to others
     :return: Returns a PySpark dataframe
     """
-    if spark_session is None:
-        try:
-            hl.init()
-        except Exception as err:
-            print('Hail session already initialized')
+    if cols is None:
+        cols = [{'field_name':'id',
+                 'data_type':StringType()}]
+    if primary_key is None:
+        primary_key = {
+            'field_name':'id',
+            'data_type':StringType(),
+            'value_list':[]
+        }
+    if foreign_keys is None:
+        foreign_keys = []
+#    if spark_session is None:
+#        try: ## TODO add idempotent test for spark session
+#            hl.init()
+#        except Exception as err:
+#            print('Hail session already initialized')
 #        sc = hl.spark_context()
-        spark_session = SparkSession.builder.getOrCreate()
+#        spark_session = SparkSession.builder.getOrCreate()
 #        spark_session = SparkSession.builder.master("local[1]").appName("Test Spark Session").getOrCreate()
     if len(foreign_keys) > 0:
         foreign_key_lst = [col['field_name'] for col in foreign_keys]
@@ -194,24 +202,14 @@ def generate_test_data_table(table_name:str,
     return df
 
 
-def generate_test_hail_table(table_name:str='hail_table',
+def generate_test_hail_table(spark_session,
+                             table_name:str='hail_table',
                              no_of_rows=0,
-                             primary_row_key:dict={'field_name':'row_id',
-                                                   'data_type':StringType(),
-                                                   'value_list':['a','b','c','d']},
-                             primary_col_key:dict={'field_name':'col_id',
-                                                   'data_type':StringType(),
-                                                   'value_list':['z','y','x','w']},
-                             spark_session=None,
-                             row_fields:list=[],
-                             col_fields:list=[],
-                             entry_fields:list=[{'field_name':'entry_field',
-                                                 'data_type':FloatType(),
-                                                 'field_params':{'distribution':'normal',
-                                                                 'mean':50,
-                                                                 'stddev':7,
-                                                                 'maxValue':100,
-                                                                 'minValue':0.0}}]):
+                             primary_row_key:dict=None,
+                             primary_col_key:dict=None,
+                             row_fields:list=None,
+                             col_fields:list=None,
+                             entry_fields:list=None):
     """
     :param table_name: not really necessary; holdover from other fx
     :param no_of_rows: number of rows to be generated in the Hail table prior to matrix generation
@@ -229,12 +227,32 @@ def generate_test_hail_table(table_name:str='hail_table',
                                 - Exponential (req is rate)
     :return: Returns a Hail matrix
     """
-    if spark_session is None:
-        try:
-            hl.init()
-        except Exception as err:
-            print('Hail session already initialized')
-        spark_session = SparkSession.builder.getOrCreate()
+    if primary_row_key is None:
+        primary_row_key = {'field_name':'row_id',
+                           'data_type':StringType(),
+                           'value_list':['a','b','c','d']}
+    if primary_col_key is None:
+        primary_col_key = {'field_name':'col_id',
+                           'data_type':StringType(),
+                           'value_list':['z','y','x','w']}
+    if row_fields is None:
+        row_fields = []
+    if col_fields is None:
+        col_fields = []
+    if entry_fields is None:
+        entry_fields = [{'field_name':'entry_field',
+                         'data_type':FloatType(),
+                         'field_params':{'distribution':'normal',
+                                         'mean':50,
+                                         'stddev':7,
+                                         'maxValue':100,
+                                         'minValue':0.0}}]
+#    if spark_session is None:
+#        try:
+#            hl.init()
+#        except Exception as err:
+#            print('Hail session already initialized')
+#        spark_session = SparkSession.builder.getOrCreate()
 #    if len(primary_row_key) > 1:
 #        raise Exception('INPUT ERROR: only one primary row key')
     if 'field_name' not in primary_row_key:

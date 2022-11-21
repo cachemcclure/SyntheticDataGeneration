@@ -6,97 +6,115 @@ from pyspark.sql import dataframe
 import hail as hl
 
 
+def infer_pandas(implicit_dataframe):
+    out = []
+    aa, bb = implicit_dataframe.shape
+    if aa < 1:
+        raise Exception('INPUT EXCEPTION: Supplied dataframe has no data')
+    if bb < 1:
+        raise Exception('INPUT EXCEPTION: Supplied dataframe has no columns')
+    for col in implicit_dataframe:
+        temp = {'field_name':col}
+        if type(implicit_dataframe[col][0]) == np.bool_:
+            temp['data_type'] = BooleanType()
+        elif type(implicit_dataframe[col][0]) == np.float64:
+            temp['data_type'] = FloatType()
+        elif type(implicit_dataframe[col][0]) == np.int64:
+            temp['data_type'] = IntegerType()
+        elif type(implicit_dataframe[col][0]) == str:
+            temp['data_type'] = StringType()
+        elif type(implicit_dataframe[col][0]) == int:
+            temp['data_type'] = IntegerType()
+        else:
+            raise Exception(f'PARSE ERROR: unable to impute data type for column {col}')
+        out.append(temp)
+    return out
+
+
+def infer_spark(implicit_dataframe):
+    out = []
+    aa = implicit_dataframe.count()
+    bb = len(implicit_dataframe.columns)
+    if aa < 1:
+        raise Exception('INPUT EXCEPTION: Supplied dataframe has no data')
+    if bb < 1:
+        raise Exception('INPUT EXCEPTION: Supplied dataframe has no columns')
+    for col, dt in implicit_dataframe.dtypes:
+        temp = {'field_name':col}
+        if dt == 'string':
+            temp['data_type'] = StringType()
+        elif dt == 'bigint':
+            temp['data_type'] = DoubleType()
+        elif dt == 'boolean':
+            temp['data_type'] = BooleanType()
+        elif dt == 'double':
+            temp['data_type'] = DoubleType()  # TODO Should this be FloatType or DoubleType?
+        elif dt == 'float':
+            temp['data_type'] = FloatType()
+        elif dt == 'int':
+            temp['data_type'] = IntegerType()
+        else:
+            raise Exception(f'PARSE ERROR: unable to impute data type for column {col}')
+        out.append(temp)
+    return out
+
+
+def infer_hail(implicit_dataframe):
+    out = []
+    entries = dict(implicit_dataframe.entry)
+    col_key = dict(implicit_dataframe.col)
+    row_key = dict(implicit_dataframe.row)
+    for entry in entries:
+        temp = {'field_name':entry}
+        vtype = type(entries[entry])
+        if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
+            temp['data_type'] = FloatType()
+        elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
+            temp['data_type'] = IntegerType()
+        elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
+            temp['data_type'] = StringType()
+        elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
+            temp['data_type'] = BooleanType()
+        out.append(temp)
+    for entry in col_key:
+        temp = {'field_name':entry}
+        vtype = type(entries[entry])
+        if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
+            temp['data_type'] = FloatType()
+        elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
+            temp['data_type'] = IntegerType()
+        elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
+            temp['data_type'] = StringType()
+        elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
+            temp['data_type'] = BooleanType()
+        out.append(temp)
+    for entry in row_key:
+        temp = {'field_name':entry}
+        vtype = type(entries[entry])
+        if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
+            temp['data_type'] = FloatType()
+        elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
+            temp['data_type'] = IntegerType()
+        elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
+            temp['data_type'] = StringType()
+        elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
+            temp['data_type'] = BooleanType()
+        out.append(temp)
+    return out
+
+
 def implied_schema(implicit_dataframe):
     """
     :param implicit_dataframe: Pandas or Pyspark Dataframe that contains an example of the req'd output
     :return: Returns schema for required test data
     """
-    out = []
+#    out = []
     if type(implicit_dataframe) == pd.DataFrame:
-        aa, bb = implicit_dataframe.shape
-        if aa < 1:
-            raise Exception('INPUT EXCEPTION: Supplied dataframe has no data')
-        if bb < 1:
-            raise Exception('INPUT EXCEPTION: Supplied dataframe has no columns')
-        for col in implicit_dataframe:
-            temp = {'field_name':col}
-            if type(implicit_dataframe[col][0]) == np.bool_:
-                temp['data_type'] = BooleanType()
-            elif type(implicit_dataframe[col][0]) == np.float64:
-                temp['data_type'] = FloatType()
-            elif type(implicit_dataframe[col][0]) == np.int64:
-                temp['data_type'] = IntegerType()
-            elif type(implicit_dataframe[col][0]) == str:
-                temp['data_type'] = StringType()
-            elif type(implicit_dataframe[col][0]) == int:
-                temp['data_type'] = IntegerType()
-            else:
-                raise Exception(f'PARSE ERROR: unable to impute data type for column {col}')
-            out.append(temp)
+        out = infer_pandas(implicit_dataframe)
     elif type(implicit_dataframe) == dataframe.DataFrame:
-        aa = implicit_dataframe.count()
-        bb = len(implicit_dataframe.columns)
-        if aa < 1:
-            raise Exception('INPUT EXCEPTION: Supplied dataframe has no data')
-        if bb < 1:
-            raise Exception('INPUT EXCEPTION: Supplied dataframe has no columns')
-        for col, dt in implicit_dataframe.dtypes:
-            temp = {'field_name':col}
-            if dt == 'string':
-                temp['data_type'] = StringType()
-            elif dt == 'bigint':
-                temp['data_type'] = DoubleType()
-            elif dt == 'boolean':
-                temp['data_type'] = BooleanType()
-            elif dt == 'double':
-                temp['data_type'] = DoubleType()  # TODO Should this be FloatType or DoubleType?
-            elif dt == 'float':
-                temp['data_type'] = FloatType()
-            elif dt == 'int':
-                temp['data_type'] = IntegerType()
-            else:
-                raise Exception(f'PARSE ERROR: unable to impute data type for column {col}')
-            out.append(temp)
+        out = infer_spark(implicit_dataframe)
     elif isinstance(type(implicit_dataframe),hl.matrixtable.MatrixTable):
-        entries = dict(implicit_dataframe.entry)
-        col_key = dict(implicit_dataframe.col)
-        row_key = dict(implicit_dataframe.row)
-        for entry in entries:
-            temp = {'field_name':entry}
-            vtype = type(entries[entry])
-            if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
-                temp['data_type'] = FloatType()
-            elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
-                temp['data_type'] = IntegerType()
-            elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
-                temp['data_type'] = StringType()
-            elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
-                temp['data_type'] = BooleanType()
-            out.append(temp)
-        for entry in col_key:
-            temp = {'field_name':entry}
-            vtype = type(entries[entry])
-            if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
-                temp['data_type'] = FloatType()
-            elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
-                temp['data_type'] = IntegerType()
-            elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
-                temp['data_type'] = StringType()
-            elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
-                temp['data_type'] = BooleanType()
-            out.append(temp)
-        for entry in row_key:
-            temp = {'field_name':entry}
-            vtype = type(entries[entry])
-            if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
-                temp['data_type'] = FloatType()
-            elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
-                temp['data_type'] = IntegerType()
-            elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
-                temp['data_type'] = StringType()
-            elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
-                temp['data_type'] = BooleanType()
-            out.append(temp)
+        out = infer_hail(implicit_dataframe)
     else:
         raise Exception('INPUT EXCEPTION: Supplied dataframe of incorrect type')
     return out
