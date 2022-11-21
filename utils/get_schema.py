@@ -59,47 +59,31 @@ def infer_spark(implicit_dataframe):
     return out
 
 
+def infer_hail_sub(entry):
+    temp = {'field_name':entry}
+    vtype = type(entries[entry])
+    if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
+        temp['data_type'] = FloatType()
+    elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
+        temp['data_type'] = IntegerType()
+    elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
+        temp['data_type'] = StringType()
+    elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
+        temp['data_type'] = BooleanType()
+    return temp
+
+
 def infer_hail(implicit_dataframe):
     out = []
     entries = dict(implicit_dataframe.entry)
     col_key = dict(implicit_dataframe.col)
     row_key = dict(implicit_dataframe.row)
     for entry in entries:
-        temp = {'field_name':entry}
-        vtype = type(entries[entry])
-        if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
-            temp['data_type'] = FloatType()
-        elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
-            temp['data_type'] = IntegerType()
-        elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
-            temp['data_type'] = StringType()
-        elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
-            temp['data_type'] = BooleanType()
-        out.append(temp)
+        out.append(infer_hail_sub(entry))
     for entry in col_key:
-        temp = {'field_name':entry}
-        vtype = type(entries[entry])
-        if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
-            temp['data_type'] = FloatType()
-        elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
-            temp['data_type'] = IntegerType()
-        elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
-            temp['data_type'] = StringType()
-        elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
-            temp['data_type'] = BooleanType()
-        out.append(temp)
+        out.append(infer_hail_sub(entry))
     for entry in row_key:
-        temp = {'field_name':entry}
-        vtype = type(entries[entry])
-        if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
-            temp['data_type'] = FloatType()
-        elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
-            temp['data_type'] = IntegerType()
-        elif isinstance(vtype,hl.expr.expressions.typed_expressions.StringExpression):
-            temp['data_type'] = StringType()
-        elif isinstance(vtype,hl.expr.expressions.typed_expressions.BooleanExpression):
-            temp['data_type'] = BooleanType()
-        out.append(temp)
+        out.append(infer_hail_sub(entry))
     return out
 
 
@@ -108,7 +92,6 @@ def implied_schema(implicit_dataframe):
     :param implicit_dataframe: Pandas or Pyspark Dataframe that contains an example of the req'd output
     :return: Returns schema for required test data
     """
-#    out = []
     if type(implicit_dataframe) == pd.DataFrame:
         out = infer_pandas(implicit_dataframe)
     elif type(implicit_dataframe) == dataframe.DataFrame:

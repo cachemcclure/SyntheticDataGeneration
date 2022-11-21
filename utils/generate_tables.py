@@ -168,7 +168,7 @@ def generate_test_data_table(table_name:str,
     if foreign_keys is None:
         foreign_keys = []
 #    if spark_session is None:
-#        try: ## TODO add idempotent test for spark session
+#        try:
 #            hl.init()
 #        except Exception as err:
 #            print('Hail session already initialized')
@@ -181,7 +181,6 @@ def generate_test_data_table(table_name:str,
         foreign_key_lst = []
     non_key_cols = [col for col in cols if (col['field_name'] not in foreign_key_lst)
                     and (col['field_name'] != primary_key['field_name'])]
-##    print(non_key_cols)
     if len(primary_key['value_list']) > 0:
         df_spec = dg.DataGenerator(sparkSession=spark_session,
                                    name=f'test_{table_name}').withColumn(colName=primary_key['field_name'],
@@ -253,23 +252,18 @@ def generate_test_hail_table(spark_session,
 #        except Exception as err:
 #            print('Hail session already initialized')
 #        spark_session = SparkSession.builder.getOrCreate()
-#    if len(primary_row_key) > 1:
-#        raise Exception('INPUT ERROR: only one primary row key')
     if 'field_name' not in primary_row_key:
         primary_row_key['field_name'] = 'row_id'
     if 'data_type' not in primary_row_key:
         primary_row_key['data_type'] = StringType()
     if 'value_list' not in primary_row_key:
         primary_row_key['value_list'] = ['a','b','c','d']
-#    if len(primary_col_key) > 1:
-#        raise Exception('INPUT ERROR: only one primary col key')
     if 'field_name' not in primary_col_key:
         primary_col_key['field_name'] = 'col_id'
     if 'data_type' not in primary_col_key:
         primary_col_key['data_type'] = StringType()
     if 'value_list' not in primary_col_key:
         primary_col_key['value_list'] = ['z','y','x','w']
-#    no_of_rows = int(len(primary_row_key) * len(primary_col_key))
     df_spec = dg.DataGenerator(sparkSession=spark_session,
                                name=f'test_{table_name}')
     df_spec.withColumn(colName=primary_row_key['field_name'],
@@ -296,8 +290,4 @@ def generate_test_hail_table(spark_session,
                                                   col_key=[primary_col_key['field_name']],
                                                   row_fields=row_field_list,
                                                   col_fields=col_field_list)
-#    df = hl.Table.from_spark(df_spec.build()).to_matrix_table(row_key=[primary_row_key['field_name']],
-#                                                              col_key=[primary_col_key['field_name']],
-#                                                              row_fields=row_field_list,
-#                                                              col_fields=col_field_list)
     return df2
