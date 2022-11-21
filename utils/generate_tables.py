@@ -45,6 +45,90 @@ def generate_identity_table(spark_session,
     return df
 
 
+def dg_dist_normal(df_spec,field):
+    if field['field_params']['distribution'].lower() == 'normal':
+        if ('mean' not in field['field_params']) or ('stddev' not in field['field_params']) or \
+                ('maxValue' not in field['field_params']) or ('minValue' not in field['field_params']):
+            v_mean = 0
+            v_stddev = 1
+            field['field_params']['maxValue'] = 100
+            field['field_params']['minValue'] = 0
+        else:
+            v_mean = field['field_params']['mean']
+            v_stddev = field['field_params']['stddev']
+        df_spec.withColumn(colName=field['field_name'],
+                           colType=field['data_type'],
+                           minValue=field['field_params']['minValue'],
+                           maxValue=field['field_params']['maxValue'],
+                           random=True,
+                           distribution=dist.Normal(mean=v_mean,stddev=v_stddev))
+
+
+def dg_dist_beta(df_spec,field):
+    if ('alpha' not in field['field_params']) or ('beta' not in field['field_params']) or \
+            ('maxValue' not in field['field_params']) or ('minValue' not in field['field_params']):
+        v_alpha = 0
+        v_beta = 1
+        field['field_params']['maxValue'] = 100
+        field['field_params']['minValue'] = 0
+    else:
+        v_alpha = field['field_params']['alpha']
+        v_beta = field['field_params']['beta']
+    df_spec.withColumn(colName=field['field_name'],
+                       colType=field['data_type'],
+                       minValue=field['field_params']['minValue'],
+                       maxValue=field['field_params']['maxValue'],
+                       random=True,
+                       distribution=dist.Beta(alpha=v_alpha,beta=v_beta))
+
+
+def dg_dist_gamma(df_spec,field):
+    if ('shape' not in field['field_params']) or ('scale' not in field['field_params']) or \
+            ('maxValue' not in field['field_params']) or ('minValue' not in field['field_params']):
+        v_shape = 0
+        v_scale = 1
+        field['field_params']['maxValue'] = 100
+        field['field_params']['minValue'] = 0
+    else:
+        v_shape = field['field_params']['shape']
+        v_scale = field['field_params']['scale']
+    df_spec.withColumn(colName=field['field_name'],
+                       colType=field['data_type'],
+                       minValue=field['field_params']['minValue'],
+                       maxValue=field['field_params']['maxValue'],
+                       random=True,
+                       distribution=dist.Gamma(shape=v_shape,scale=v_scale))
+
+
+def dg_dist_exponential(df_spec,field):
+    if ('rate' not in field['field_params']) or \
+            ('maxValue' not in field['field_params']) or ('minValue' not in field['field_params']):
+        v_rate = 10
+        field['field_params']['maxValue'] = 100
+        field['field_params']['minValue'] = 0
+    else:
+        v_rate = field['field_params']['rate']
+    df_spec.withColumn(colName=field['field_name'],
+                       colType=field['data_type'],
+                       minValue=field['field_params']['minValue'],
+                       maxValue=field['field_params']['maxValue'],
+                       random=True,
+                       distribution=dist.Exponential(rate=v_rate))
+
+
+def dg_distributions(df_spec,field):
+    if field['field_params']['distribution'].lower() == 'normal':
+        dg_dist_normal(df_spec,field)
+    elif field['field_params']['distribution'].lower() == 'beta':
+        dg_dist_beta(df_spec,field)
+    elif field['field_params']['distribution'].lower() == 'gamma':
+        dg_dist_gamma(df_spec,field)
+    elif field['field_params']['distribution'].lower() == 'exponential':
+        dg_dist_exponential(df_spec,field)
+    else:
+        raise Exception('INPUT ERROR: Unrecognized distribution type')
+
+
 def add_column_to_dg(df_spec,field):
     """
     :param df_spec: dbldatagen table spec
@@ -59,66 +143,7 @@ def add_column_to_dg(df_spec,field):
                                random=True)
         elif 'field_params' in field:
             if 'distribution' in field['field_params']:
-                if field['field_params']['distribution'].lower() == 'normal':
-                    if ('mean' not in field['field_params']) or ('stddev' not in field['field_params']) or \
-                            ('maxValue' not in field['field_params']) or ('minValue' not in field['field_params']):
-                        v_mean = 0
-                        v_stddev = 1
-                    else:
-                        v_mean = field['field_params']['mean']
-                        v_stddev = field['field_params']['stddev']
-                    df_spec.withColumn(colName=field['field_name'],
-                                       colType=field['data_type'],
-                                       minValue=field['field_params']['minValue'],
-                                       maxValue=field['field_params']['maxValue'],
-                                       random=True,
-                                       distribution=dist.Normal(mean=v_mean,stddev=v_stddev))
-                #                distribution = dist.Normal(mean=v_mean,stddev=v_stddev)
-                elif field['field_params']['distribution'].lower() == 'beta':
-                    if ('alpha' not in field['field_params']) or ('beta' not in field['field_params']) or \
-                            ('maxValue' not in field['field_params']) or ('minValue' not in field['field_params']):
-                        v_alpha = 0
-                        v_beta = 1
-                    else:
-                        v_alpha = field['field_params']['alpha']
-                        v_beta = field['field_params']['beta']
-                    df_spec.withColumn(colName=field['field_name'],
-                                       colType=field['data_type'],
-                                       minValue=field['field_params']['minValue'],
-                                       maxValue=field['field_params']['maxValue'],
-                                       random=True,
-                                       distribution=dist.Beta(alpha=v_alpha,beta=v_beta))
-                #                distribution = dist.Beta(alpha=v_alpha,beta=v_beta)
-                elif field['field_params']['distribution'].lower() == 'gamma':
-                    if ('shape' not in field['field_params']) or ('scale' not in field['field_params']) or \
-                            ('maxValue' not in field['field_params']) or ('minValue' not in field['field_params']):
-                        v_shape = 0
-                        v_scale = 1
-                    else:
-                        v_shape = field['field_params']['shape']
-                        v_scale = field['field_params']['scale']
-                    df_spec.withColumn(colName=field['field_name'],
-                                       colType=field['data_type'],
-                                       minValue=field['field_params']['minValue'],
-                                       maxValue=field['field_params']['maxValue'],
-                                       random=True,
-                                       distribution=dist.Gamma(shape=v_shape,scale=v_scale))
-                #                distribution = dist.Gamma(shape=v_shape,scale=v_scale)
-                elif field['field_params']['distribution'].lower() == 'exponential':
-                    if ('rate' not in field['field_params']) or \
-                            ('maxValue' not in field['field_params']) or ('minValue' not in field['field_params']):
-                        v_rate = 10
-                    else:
-                        v_rate = field['field_params']['rate']
-                    df_spec.withColumn(colName=field['field_name'],
-                                       colType=field['data_type'],
-                                       minValue=field['field_params']['minValue'],
-                                       maxValue=field['field_params']['maxValue'],
-                                       random=True,
-                                       distribution=dist.Exponential(rate=v_rate))
-                #                distribution = dist.Exponential(rate=v_rate)
-                else:
-                    raise Exception('INPUT ERROR: Unrecognized distribution type')
+                dg_distributions(df_spec,field)
             elif ('weight_list' in field['field_params']) and ('value_list' in field['field_params']):
                 weight_list = field['field_params']['weight_list']
                 value_list = field['field_params']['value_list']
