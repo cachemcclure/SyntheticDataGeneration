@@ -1,9 +1,38 @@
 import inspect
 import numpy as np
 import pandas as pd
-from pyspark.sql.types import IntegerType, FloatType, StringType, BooleanType, DoubleType
+from pyspark.sql.types import IntegerType, FloatType, StringType, BooleanType, DoubleType, StructType, StructField
 from pyspark.sql import dataframe
 import hail as hl
+
+
+def infer_pandas_sub(item,output):
+    if type(item) == np.bool_:
+        output['data_type'] = BooleanType()
+    elif type(item) == np.float64:
+        output['data_type'] = FloatType()
+    elif type(item) == np.int64:
+        output['data_type'] = IntegerType()
+    elif type(item) == str:
+        output['data_type'] = StringType()
+    elif type(item) == int:
+        output['data_type'] = IntegerType()
+    elif type(item) == list:
+        output['data_type'] = StructField()
+        output['sub_fields'] = []
+        temp = {'field_name': 'array_col'}
+        temp = infer_pandas_sub(item[0],temp)
+        output['sub_fields'].append(temp)
+    elif type(item) == dict:
+        output['data_type'] = StructField()
+        output['sub_fields'] = []
+        for xx in item:
+            temp = {'field_name':xx}
+            temp = infer_pandas_sub(item[xx],temp)
+            output['sub_fields'].append(temp)
+    else:
+        raise Exception(f'PARSE ERROR: unable to impute data type for column')
+    return output
 
 
 def infer_pandas(implicit_dataframe):
@@ -15,18 +44,31 @@ def infer_pandas(implicit_dataframe):
         raise Exception('INPUT EXCEPTION: Supplied dataframe has no columns')
     for col in implicit_dataframe:
         temp = {'field_name':col}
-        if type(implicit_dataframe[col][0]) == np.bool_:
-            temp['data_type'] = BooleanType()
-        elif type(implicit_dataframe[col][0]) == np.float64:
-            temp['data_type'] = FloatType()
-        elif type(implicit_dataframe[col][0]) == np.int64:
-            temp['data_type'] = IntegerType()
-        elif type(implicit_dataframe[col][0]) == str:
-            temp['data_type'] = StringType()
-        elif type(implicit_dataframe[col][0]) == int:
-            temp['data_type'] = IntegerType()
-        else:
-            raise Exception(f'PARSE ERROR: unable to impute data type for column {col}')
+        temp = infer_pandas_sub(implicit_dataframe[col][0],temp)
+#        if type(implicit_dataframe[col][0]) == np.bool_:
+#            temp['data_type'] = BooleanType()
+#        elif type(implicit_dataframe[col][0]) == np.float64:
+#            temp['data_type'] = FloatType()
+#        elif type(implicit_dataframe[col][0]) == np.int64:
+#            temp['data_type'] = IntegerType()
+#        elif type(implicit_dataframe[col][0]) == str:
+#            temp['data_type'] = StringType()
+#        elif type(implicit_dataframe[col][0]) == int:
+#            temp['data_type'] = IntegerType()
+#        elif type(implicit_dataframe[col][0]) == list:
+#            temp['data_type'] = StructType()
+#            if type(implicit_dataframe[col][0][0]) == str:
+#                temp['data_subtype'] = StringType()
+#            elif type(implicit_dataframe[col][0][0]) == int:
+#                temp['data_subtype'] = IntegerType()
+#            elif type(implicit_dataframe[col][0][0]) == np.bool_:
+#                temp['data_subtype'] = BooleanType()
+#            elif type(implicit_dataframe[col][0][0]) == np.float64:
+#                temp['data_subtype'] == FloatType()
+#            else:
+#                raise Exception(f'PARSE ERROR: unable to impute data type for column {col}')
+#        else:
+#            raise Exception(f'PARSE ERROR: unable to impute data type for column {col}')
         out.append(temp)
     return out
 
@@ -59,9 +101,9 @@ def infer_spark(implicit_dataframe):
     return out
 
 
-def infer_hail_sub(entry):
+def infer_hail_sub(entry,data):
     temp = {'field_name':entry}
-    vtype = type(entries[entry])
+    vtype = type(data)
     if isinstance(vtype,hl.expr.expressions.typed_expressions.Float32Expression):
         temp['data_type'] = FloatType()
     elif isinstance(vtype,hl.expr.expressions.typed_expressions.Int32Expression):
@@ -79,11 +121,11 @@ def infer_hail(implicit_dataframe):
     col_key = dict(implicit_dataframe.col)
     row_key = dict(implicit_dataframe.row)
     for entry in entries:
-        out.append(infer_hail_sub(entry))
+        out.append(infer_hail_sub(entry,entries[entry]))
     for entry in col_key:
-        out.append(infer_hail_sub(entry))
+        out.append(infer_hail_sub(entry,entries[entry]))
     for entry in row_key:
-        out.append(infer_hail_sub(entry))
+        out.append(infer_hail_sub(entry,entries[entry]))
     return out
 
 

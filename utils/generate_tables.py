@@ -1,6 +1,6 @@
 import dbldatagen as dg
 import dbldatagen.distributions as dist
-from pyspark.sql.types import IntegerType, FloatType, StringType, BooleanType, DoubleType
+from pyspark.sql.types import IntegerType, FloatType, StringType, BooleanType, DoubleType, StructType, StructField
 from pyspark.sql import SparkSession
 import hail as hl
 
@@ -316,3 +316,25 @@ def generate_test_hail_table(spark_session,
                                                   row_fields=row_field_list,
                                                   col_fields=col_field_list)
     return df2
+
+
+def generate_test_glow_table(spark_session,
+                             table_name:str='glow_table',
+                             sample_size=0,
+                             no_of_samples=0,
+                             sample_block:dict=None,
+                             header_block:dict=None,
+                             entry_fields:list=None):
+    if sample_block is None:
+        sample_block = {'field_name':'sample_block',
+                        'data_type':StringType(),
+                        'value_list':['a','b','c','d']}
+    if header_block is None:
+        header_block = {'field_name':'header_block',
+                        'data_type':StringType()}
+    if entry_fields is None:
+        entry_fields = [{'field_name':'entry_field',
+                         'data_type':StructType(),
+                         'params':{'mu':0,
+                                   'sig':1}}]
+    return df
