@@ -158,7 +158,7 @@ def add_column_to_dg(df_spec,field):
             df_spec.withColumn(colName=field['field_name'],
                                colType=field['data_type'],
                                random=True)
-    elif ('data_type' == StructField()) and ('sub_fields' in field):
+    elif ('data_type' == StructType()) and ('sub_fields' in field):
         for subField in field['sub_fields']:
             add_column_to_dg(df_spec,subField)
     else:

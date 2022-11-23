@@ -24,7 +24,7 @@ def infer_pandas_sub(item,output):
         temp = infer_pandas_sub(item[0],temp)
         output['sub_fields'].append(temp)
     elif type(item) == dict:
-        output['data_type'] = StructField()
+        output['data_type'] = StructType()
         output['sub_fields'] = []
         for xx in item:
             temp = {'field_name':xx}
@@ -96,7 +96,7 @@ def infer_spark(implicit_dataframe):
         elif dt == 'int':
             temp['data_type'] = IntegerType()
         elif dt.startswith('struct'):
-            temp['data_type'] = StructField()
+            temp['data_type'] = StructType()
             fields_temp = dt[7:-1].split(',')
             temp['sub_fields'] = []
             for item in fields_temp:
