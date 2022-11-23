@@ -355,10 +355,47 @@ def generate_test_glow_table(spark_session,
                         'value_list':['a','b','c','d']}
     if header_block is None:
         header_block = {'field_name':'header_block',
-                        'data_type':StringType()}
+                        'data_type':StringType(),
+                        'value_list':['apple','orange','banana']}
     if entry_fields is None:
         entry_fields = [{'field_name':'entry_field',
                          'data_type':StructType(),
-                         'params':{'mu':0,
-                                   'sig':1}}]
+                         'sub_fields':[{'field_name':'test1',
+                                        'data_type':IntegerType(),
+                                        'params':{'value_list':[0,1,2],
+                                                  'weight_list':[100,10,1]}},
+                                       {'field_name':'test2',
+                                        'data_type':IntegerType(),
+                                        'params':{'value_list':[0,1,2],
+                                                  'weight_list':[100,20,2]}}]}]
+    df_spec = dg.DataGenerator(sparkSession=spark_session,
+                               name=f'test_{table_name}')
+    if 'value_list' in sample_block:
+        df_spec.withColumn(colName=sample_block['field_name'],
+                           colType=sample_block['data_type'],
+                           values=sample_block['value_list'],
+                           random=True)
+    else:
+        df_spec.withColumn(colName=sample_block['field_name'],
+                           colType=sample_block['data_type'],
+                           random=True)
+    if 'value_list' in header_block:
+        df_spec.withColumn(colName=header_block['field_name'],
+                           colType=header_block['data_type'],
+                           values=header_block['value_list'],
+                           random=True)
+    else:
+        df_spec.withColumn(colName=header_block['field_name'],
+                           colType=header_block['data_type'],
+                           random=True)
+    structs = {}
+    for field in entry_fields:
+        add_column_to_dg(df_spec=df_spec,field=field)
+        if 'sub_fields' in field:
+            structs[field['field_name']] = [xx['field_name'] for xx in field['sub_fields']]
+    df = df_spec.build()
+    for field in structs:
+        df = df.withColumn(field,F.struct(*([F.col(cc) for cc in structs[field]])))
+        for col in structs[field]:
+            df = df.drop(col)
     return df
