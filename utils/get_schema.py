@@ -95,6 +95,14 @@ def infer_spark(implicit_dataframe):
             temp['data_type'] = FloatType()
         elif dt == 'int':
             temp['data_type'] = IntegerType()
+        elif dt.startswith('struct'):
+            temp['data_type'] = StructField()
+            fields_temp = dt[7:-1].split(',')
+            temp['sub_fields'] = []
+            for item in fields_temp:
+                split_item = item.split(':')
+                sub_temp = {'field_name': split_item[0], 'data_type': split_item[1]}
+                temp['sub_fields'].append(sub_temp)
         else:
             raise Exception(f'PARSE ERROR: unable to impute data type for column {col}')
         out.append(temp)

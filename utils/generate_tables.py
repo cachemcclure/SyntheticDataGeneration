@@ -2,6 +2,7 @@ import dbldatagen as dg
 import dbldatagen.distributions as dist
 from pyspark.sql.types import IntegerType, FloatType, StringType, BooleanType, DoubleType, StructType, StructField
 from pyspark.sql import SparkSession
+import pyspark.sql.functions as F
 import hail as hl
 
 
@@ -135,7 +136,7 @@ def add_column_to_dg(df_spec,field):
     :param field: field definition
     :return: returns dbldatagen table spec
     """
-    if ('field_name' in field) and ('data_type' in field):
+    if ('field_name' in field) and ('data_type' in field) and ('data_type' != StructField()):
         if 'value_list' in field:
             df_spec.withColumn(colName=field['field_name'],
                                colType=field['data_type'],
@@ -157,7 +158,12 @@ def add_column_to_dg(df_spec,field):
             df_spec.withColumn(colName=field['field_name'],
                                colType=field['data_type'],
                                random=True)
-    return df_spec
+    elif ('data_type' == StructField()) and ('sub_fields' in field):
+        for subField in field['sub_fields']:
+            add_column_to_dg(df_spec,subField)
+    else:
+        raise Exception('INPUT ERROR: missing required fields for column creation')
+    return
 
 
 def generate_test_data_table(table_name:str,
@@ -217,12 +223,19 @@ def generate_test_data_table(table_name:str,
                                                                          colType=primary_key['data_type'])
     for col in foreign_keys:
         add_column_to_dg(df_spec,col)
+    structs = {}
     for col in non_key_cols:
         add_column_to_dg(df_spec,col)
+        if 'sub_fields' in col:
+            structs[col['field_name']] = [xx['field_name'] for xx in col['sub_fields']]
     if no_of_rows > 0:
         df = df_spec.build().limit(int(no_of_rows))
     else:
         df = df_spec.build()
+    for field in structs:
+        df = df.withColumn(field,F.struct(*([F.col(cc) for cc in structs[field]])))
+        for col in structs[field]:
+            df = df.drop(col)
     return df
 
 
@@ -301,16 +314,27 @@ def generate_test_hail_table(spark_session,
                        random=True)
     row_field_list = []
     col_field_list = []
+    structs = {}
     for field in row_fields:
         add_column_to_dg(df_spec=df_spec,field=field)
+        if 'sub_fields' in field:
+            structs[field['field_name']] = [xx['field_name'] for xx in field['sub_fields']]
     for field in col_fields:
         add_column_to_dg(df_spec=df_spec,field=field)
+        if 'sub_fields' in field:
+            structs[field['field_name']] = [xx['field_name'] for xx in field['sub_fields']]
     for field in entry_fields:
         add_column_to_dg(df_spec=df_spec,field=field)
+        if 'sub_fields' in field:
+            structs[field['field_name']] = [xx['field_name'] for xx in field['sub_fields']]
     if no_of_rows > 0:
         df = df_spec.build().limit(int(no_of_rows))
     else:
         df = df_spec.build()
+    for field in structs:
+        df = df.withColumn(field,F.struct(*([F.col(cc) for cc in structs[field]])))
+        for col in structs[field]:
+            df = df.drop(col)
     df2 = hl.Table.from_spark(df).to_matrix_table(row_key=[primary_row_key['field_name']],
                                                   col_key=[primary_col_key['field_name']],
                                                   row_fields=row_field_list,
